@@ -11,6 +11,8 @@ class MiniDoScreen extends StatefulWidget {
 
 class _MiniDoScreenState extends State<MiniDoScreen> {
 
+  Color pri;
+
   Future<List<Task>> _taskList;
   final DateFormat _dateFormatter = DateFormat('MMM dd, yyyy');
 
@@ -27,14 +29,32 @@ class _MiniDoScreenState extends State<MiniDoScreen> {
   }
 
   Widget _buildTask(Task task){
+    if(task.priority == 'High'){
+      pri = Colors.redAccent;
+    }
+    else if(task.priority == 'Medium'){
+      pri = Colors.yellowAccent;
+    }
+    else if(task.priority == 'Low'){
+      pri = Colors.greenAccent;
+    }
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 25.0),
       child: Column(
         children: [
           ListTile(
             title: Text(task.title, style: TextStyle(fontSize: 18.0, decoration: task.status == 0 ? TextDecoration.none : TextDecoration.lineThrough)),
-            subtitle: Text('${_dateFormatter.format(task.date)} | ${task.priority}',
+            subtitle: RichText(
+              text: TextSpan(
+                text: '${_dateFormatter.format(task.date)} |',
                 style: TextStyle(fontSize: 15.0, decoration: task.status == 0 ? TextDecoration.none : TextDecoration.lineThrough
+                ),
+                children: [
+                  TextSpan(text: ' ${task.priority}',
+                    style: TextStyle(color: pri, fontSize: 15.0, decoration: task.status == 0 ? TextDecoration.none : TextDecoration.lineThrough
+                    ),
+                  ),
+                ]
               ),
             ),
             trailing: Checkbox(
