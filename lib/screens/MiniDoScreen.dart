@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:Minido/helpers/DatabaseHelper.dart';
 import 'package:Minido/models/TaskModel.dart';
 import 'package:Minido/screens/AddTaskScreen.dart';
+import 'package:provider/provider.dart';
+import 'package:Minido/helpers/ThemeHelper.dart';
 
 class MiniDoScreen extends StatefulWidget {
   @override
@@ -47,7 +49,7 @@ class _MiniDoScreenState extends State<MiniDoScreen> {
             subtitle: RichText(
               text: TextSpan(
                 text: '${_dateFormatter.format(task.date)} |',
-                style: TextStyle(fontSize: 15.0, decoration: task.status == 0 ? TextDecoration.none : TextDecoration.lineThrough
+                style: TextStyle(color: Colors.grey,fontSize: 15.0, decoration: task.status == 0 ? TextDecoration.none : TextDecoration.lineThrough
                 ),
                 children: [
                   TextSpan(text: ' ${task.priority}',
@@ -117,12 +119,23 @@ class _MiniDoScreenState extends State<MiniDoScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text("My Tasks",
+                    Row(
+                      children: <Widget>[
+                      Text("My Tasks",
                       style: TextStyle(
                         color: Colors.orange,
                         fontSize: 40.0,
                         fontWeight: FontWeight.bold,
                       ),),
+                        Spacer(),
+                        Switch(
+                          value: Provider.of<AppStateNotifier>(context, listen: false).isDarkMode,
+                          onChanged: (boolVal) {
+                            Provider.of<AppStateNotifier>(context, listen: false).updateTheme(boolVal);
+                          },
+                        )
+                      ]
+                    ),
                     SizedBox(height: 10,),
                     Text("$completedTaskCount of ${snapshot.data.length}",
                       style: TextStyle(
