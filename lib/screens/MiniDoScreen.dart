@@ -5,6 +5,8 @@ import 'package:Minido/models/TaskModel.dart';
 import 'package:Minido/screens/AddTaskScreen.dart';
 import 'package:provider/provider.dart';
 import 'package:Minido/helpers/ThemeHelper.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:Minido/helpers/AdHelper.dart';
 
 class MiniDoScreen extends StatefulWidget {
   @override
@@ -13,16 +15,75 @@ class MiniDoScreen extends StatefulWidget {
 
 class _MiniDoScreenState extends State<MiniDoScreen> {
 
+  BannerAd _bad;
+  InterstitialAd _iad;
+  bool isLoaded;
+
+  @override void initState() {
+    super.initState();
+    _updateTaskList();
+
+    _bad = BannerAd(
+      adUnitId: AdHelper.bannerAdUnitId,
+      request: AdRequest(),
+      size: AdSize.banner,
+      listener: AdListener(
+        onAdLoaded: (_) {
+          setState(() {
+            isLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (_, error) {
+          print('Ad failed to load with Error: $error');
+        }
+      ),
+    );
+
+    _bad.load();
+
+
+    _iad = InterstitialAd(
+      adUnitId: AdHelper.interstitialAdUnitId,
+      request: AdRequest(),
+      listener: AdListener(
+        onAdClosed: (ad) {
+          print("Closed Ad");
+        },
+        onAdOpened: (ad) {
+          print("Opened Ad");
+        },
+      ),
+    );
+
+    _iad.load();
+  }
+
+  @override
+  void dispose() {
+    _bad?.dispose();
+    _iad?.dispose();
+    super.dispose();
+  }
+
+  Widget checkForAd() {
+    if (isLoaded == true) {
+      return Container(
+        child: AdWidget(
+          ad: _bad,
+        ),
+        width: _bad.size.width.toDouble(),
+        height: _bad.size.height.toDouble(),
+        alignment: Alignment.center,
+      );
+    } else {
+      return CircularProgressIndicator();
+    }
+  }
+
   Color pri;
 
   Future<List<Task>> _taskList;
   final DateFormat _dateFormatter = DateFormat('MMM dd, yyyy');
-
-  @override
-  void initState(){
-    super.initState();
-    _updateTaskList();
-  }
 
   _updateTaskList(){
     setState(() {
@@ -85,6 +146,7 @@ class _MiniDoScreenState extends State<MiniDoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).backgroundColor,
       floatingActionButton: FloatingActionButton(
         backgroundColor: Theme.of(context).primaryColor,
         child: Icon(Icons.add),
@@ -128,11 +190,14 @@ class _MiniDoScreenState extends State<MiniDoScreen> {
                         fontWeight: FontWeight.bold,
                       ),),
                         Spacer(),
-                        Switch(
-                          value: Provider.of<AppStateNotifier>(context, listen: false).isDarkMode,
-                          onChanged: (boolVal) {
-                            Provider.of<AppStateNotifier>(context, listen: false).updateTheme(boolVal);
-                          },
+                        Consumer<ThemeNotifier>(
+                          builder: (context, notifier, child) =>
+                           Switch(
+                            value: notifier.darktheme,
+                            onChanged: (boolVal) {
+                              notifier.toggleTheme();
+                            },
+                          ),
                         )
                       ]
                     ),
@@ -147,6 +212,7 @@ class _MiniDoScreenState extends State<MiniDoScreen> {
                 ),
               );
             }
+
             return _buildTask(snapshot.data[index-1]);
           }
         );

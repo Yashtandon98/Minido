@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:Minido/helpers/DatabaseHelper.dart';
 import 'package:Minido/models/TaskModel.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:Minido/helpers/AdHelper.dart';
 
 class AddTaskScreen extends StatefulWidget {
 
@@ -15,6 +17,8 @@ class AddTaskScreen extends StatefulWidget {
 }
 
 class _AddTaskScreenState extends State<AddTaskScreen> {
+
+  InterstitialAd _iad;
 
   final _formKey = GlobalKey<FormState>();
   String _title = '';
@@ -34,11 +38,28 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       _priority = widget.task.priority;
     }
     _dateController.text = _dateFormatter.format(_date);
+
+
+    _iad = InterstitialAd(
+      adUnitId: AdHelper.interstitialAdUnitId,
+      request: AdRequest(),
+      listener: AdListener(
+        onAdClosed: (ad) {
+          print("Closed Ad");
+        },
+        onAdOpened: (ad) {
+          print("Opened Ad");
+        },
+      ),
+    );
+
+    _iad.load();
   }
 
   @override
   void dispose(){
     _dateController.dispose();
+    _iad?.dispose();
     super.dispose();
   }
 
@@ -85,6 +106,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).backgroundColor,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
@@ -191,7 +213,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                             style: TextStyle(color: Colors.white, fontSize: 20.0,
                             ),
                           ),
-                          onPressed: _submit,
+                          onPressed: () {
+                            _iad.show();
+                            _submit();
+                          },
                         ),
                       ),
                       widget.task != null ? Container(

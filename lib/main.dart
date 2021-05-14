@@ -3,12 +3,17 @@ import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:Minido/screens/splash.dart';
 import 'package:Minido/helpers/ThemeHelper.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 void main() {
+
+  WidgetsFlutterBinding.ensureInitialized();
+  MobileAds.instance.initialize();
+
   runApp(
     // ignore: missing_required_param
-    ChangeNotifierProvider<AppStateNotifier>(
-     create: (context) => AppStateNotifier(),
+    ChangeNotifierProvider<ThemeNotifier>(
+     create: (context) => ThemeNotifier(),
       child: MyApp(),
     )
   );
@@ -21,24 +26,26 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AppStateNotifier>(
-    builder: (context, appState, child) {
+    return Consumer<ThemeNotifier>(
+    builder: (context, ThemeNotifier notifier, child) {
       return MaterialApp(
         title: 'Mini-Do',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           brightness: Brightness.light,
+          backgroundColor: Colors.white,
           primarySwatch: Colors.orange,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
         darkTheme: ThemeData(
           brightness: Brightness.dark,
+          backgroundColor: Colors.black,
           primaryColor: Colors.orange,
           primarySwatch: Colors.orange,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
         home: splash(),
-        themeMode: appState.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+        themeMode: notifier.darktheme ? ThemeMode.dark : ThemeMode.light,
       );
     }
     );
