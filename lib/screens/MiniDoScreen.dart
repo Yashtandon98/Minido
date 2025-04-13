@@ -15,11 +15,45 @@ class MiniDoScreen extends StatefulWidget {
 
 class _MiniDoScreenState extends State<MiniDoScreen> {
 
-  BannerAd _bad;
-  InterstitialAd _iad;
-  bool isLoaded;
+  late BannerAd _bad;
+  late InterstitialAd _interstitialAd;
+  late bool isLoaded;
 
-  @override void initState() {
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: AdHelper.interstitialAdUnitId,
+      request: AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (InterstitialAd ad) {
+          print('Ad loaded.');
+          _interstitialAd = ad;
+
+          _interstitialAd.setImmersiveMode(true);
+
+          _interstitialAd.fullScreenContentCallback = FullScreenContentCallback(
+            onAdShowedFullScreenContent: (InterstitialAd ad) =>
+                print('Ad showed full screen content.'),
+            onAdDismissedFullScreenContent: (InterstitialAd ad) {
+              print('Ad dismissed.');
+              ad.dispose();
+            },
+            onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+              print('Failed to show ad: $error');
+              ad.dispose();
+            },
+          );
+
+          _interstitialAd.show();
+        },
+        onAdFailedToLoad: (LoadAdError error) {
+          print('InterstitialAd failed to load: $error');
+        },
+      ),
+    );
+  }
+
+  @override
+  void initState() {
     super.initState();
     _updateTaskList();
 
@@ -27,7 +61,7 @@ class _MiniDoScreenState extends State<MiniDoScreen> {
       adUnitId: AdHelper.bannerAdUnitId,
       request: AdRequest(),
       size: AdSize.banner,
-      listener: AdListener(
+      listener: BannerAdListener(
         onAdLoaded: (_) {
           setState(() {
             isLoaded = true;
@@ -40,28 +74,12 @@ class _MiniDoScreenState extends State<MiniDoScreen> {
     );
 
     _bad.load();
-
-
-    _iad = InterstitialAd(
-      adUnitId: AdHelper.interstitialAdUnitId,
-      request: AdRequest(),
-      listener: AdListener(
-        onAdClosed: (ad) {
-          print("Closed Ad");
-        },
-        onAdOpened: (ad) {
-          print("Opened Ad");
-        },
-      ),
-    );
-
-    _iad.load();
   }
 
   @override
   void dispose() {
-    _bad?.dispose();
-    _iad?.dispose();
+    _bad.dispose();
+    _interstitialAd.dispose();
     super.dispose();
   }
 
@@ -80,9 +98,9 @@ class _MiniDoScreenState extends State<MiniDoScreen> {
     }
   }
 
-  Color pri;
+  late Color pri;
 
-  Future<List<Task>> _taskList;
+  late Future<List<Task>> _taskList;
   final DateFormat _dateFormatter = DateFormat('MMM dd, yyyy');
 
   _updateTaskList(){
@@ -122,9 +140,11 @@ class _MiniDoScreenState extends State<MiniDoScreen> {
             ),
             trailing: Checkbox(
                 onChanged: (value){
-                  task.status = value ? 1 : 0;
-                  DatabaseHelper.instance.updateTask(task);
-                  _updateTaskList();
+                  if (value != null) {
+                    task.status = value ? 1 : 0;
+                    DatabaseHelper.instance.updateTask(task);
+                    _updateTaskList();
+                  }
               },
             activeColor: Theme.of(context).primaryColor,
             value: task.status == 1 ? true : false,
@@ -146,18 +166,18 @@ class _MiniDoScreenState extends State<MiniDoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).backgroundColor,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       floatingActionButton: FloatingActionButton(
         backgroundColor: Theme.of(context).primaryColor,
         child: Icon(Icons.add),
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AddTaskScreen(UpdateTaskList: _updateTaskList,),
+            builder: (_) => AddTaskScreen(UpdateTaskList: _updateTaskList),
           ),
         ),
       ),
-      body: FutureBuilder(
+      body: FutureBuilder<List<Task>>(
         future: _taskList,
         builder: (context, snapshot){
           if(!snapshot.hasData){
@@ -166,14 +186,12 @@ class _MiniDoScreenState extends State<MiniDoScreen> {
             );
           }
 
-          final int completedTaskCount = snapshot.data
-              .where((Task task) => task.status == 1)
-              .toList()
-              .length;
+          final List<Task> tasks = snapshot.data!;
+          final int completedTaskCount = tasks.where((task) => task.status == 1).length;
 
         return ListView.builder(
           padding: EdgeInsets.symmetric(vertical: 80.0),
-          itemCount: 1 + snapshot.data.length,
+          itemCount: 1 + snapshot.data!.length,
           itemBuilder: (BuildContext context, int index){
             if(index == 0){
               return Padding(
@@ -202,7 +220,7 @@ class _MiniDoScreenState extends State<MiniDoScreen> {
                       ]
                     ),
                     SizedBox(height: 10,),
-                    Text("$completedTaskCount of ${snapshot.data.length}",
+                    Text("$completedTaskCount of ${snapshot.data?.length}",
                       style: TextStyle(
                         color: Colors.grey,
                         fontSize: 20,
@@ -213,7 +231,7 @@ class _MiniDoScreenState extends State<MiniDoScreen> {
               );
             }
 
-            return _buildTask(snapshot.data[index-1]);
+            return _buildTask(snapshot.data![index-1]);
           }
         );
         },

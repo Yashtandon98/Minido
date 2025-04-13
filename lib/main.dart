@@ -33,16 +33,12 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           brightness: Brightness.light,
-          backgroundColor: Colors.white,
-          primarySwatch: Colors.orange,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
+          visualDensity: VisualDensity.adaptivePlatformDensity, colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.orange).copyWith(surface: Colors.white),
         ),
         darkTheme: ThemeData(
           brightness: Brightness.dark,
-          backgroundColor: Colors.black,
           primaryColor: Colors.orange,
-          primarySwatch: Colors.orange,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
+          visualDensity: VisualDensity.adaptivePlatformDensity, colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.orange).copyWith(surface: Colors.black),
         ),
         home: splash(),
         themeMode: notifier.darktheme ? ThemeMode.dark : ThemeMode.light,

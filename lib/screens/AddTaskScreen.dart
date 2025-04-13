@@ -8,9 +8,9 @@ import 'package:Minido/helpers/AdHelper.dart';
 class AddTaskScreen extends StatefulWidget {
 
   final Function UpdateTaskList;
-  final Task task;
+  final Task? task;
 
-  AddTaskScreen({this.UpdateTaskList, this.task});
+  AddTaskScreen({required this.UpdateTaskList, this.task});
 
   @override
   _AddTaskScreenState createState() => _AddTaskScreenState();
@@ -18,87 +18,104 @@ class AddTaskScreen extends StatefulWidget {
 
 class _AddTaskScreenState extends State<AddTaskScreen> {
 
-  InterstitialAd _iad;
+  late InterstitialAd? _interstitialAd;
+  late BannerAd _bad;
 
   final _formKey = GlobalKey<FormState>();
-  String _title = '';
-  String _priority;
+  late String _title;
+  late String _priority;
   DateTime _date = DateTime.now();
   TextEditingController _dateController = TextEditingController();
 
   final DateFormat _dateFormatter = DateFormat('MMM dd, yyyy');
   final List<String> _priorities = ['Low', 'Medium', 'High'];
 
-  @override
-  void initState(){
-    super.initState();
-    if(widget.task != null){
-      _title = widget.task.title;
-      _date = widget.task.date;
-      _priority = widget.task.priority;
-    }
-    _dateController.text = _dateFormatter.format(_date);
-
-
-    _iad = InterstitialAd(
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
       adUnitId: AdHelper.interstitialAdUnitId,
       request: AdRequest(),
-      listener: AdListener(
-        onAdClosed: (ad) {
-          print("Closed Ad");
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (InterstitialAd ad) {
+          print('Ad loaded.');
+          _interstitialAd = ad;
+
+          _interstitialAd!.setImmersiveMode(true);
+
+          _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+            onAdShowedFullScreenContent: (InterstitialAd ad) =>
+                print('Ad showed full screen content.'),
+            onAdDismissedFullScreenContent: (InterstitialAd ad) {
+              print('Ad dismissed.');
+              ad.dispose();
+            },
+            onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+              print('Failed to show ad: $error');
+              ad.dispose();
+            },
+          );
+
+          _interstitialAd!.show();
         },
-        onAdOpened: (ad) {
-          print("Opened Ad");
+        onAdFailedToLoad: (LoadAdError error) {
+          print('InterstitialAd failed to load: $error');
         },
       ),
     );
+  }
 
-    _iad.load();
+  @override
+  void initState(){
+    super.initState();
+    // If editing an existing task, prefill the fields
+    if (widget.task != null) {
+      _title = widget.task!.title;
+      _date = widget.task!.date;
+      _priority = widget.task!.priority;
+    } else {
+      // Default values for a new task
+      _title = '';
+      _date = DateTime.now();
+      _priority = '';
+      _dateController.text = _dateFormatter.format(_date);
+    }
   }
 
   @override
   void dispose(){
     _dateController.dispose();
-    _iad?.dispose();
+    _interstitialAd?.dispose();
     super.dispose();
   }
 
   _handleDatePicker() async {
-    final DateTime date = await showDatePicker(
+    final DateTime? date = await showDatePicker(
         context: context,
         initialDate: _date,
         firstDate: DateTime(2000),
         lastDate: DateTime(2100),
     );
-    if(date != null && date != _date){
+    if(date != _date){
       setState(() {
-        _date = date;
+        _date = date!;
       });
       _dateController.text = _dateFormatter.format(_date);
     }
   }
 
   _delete(){
-    DatabaseHelper.instance.deleteTask(widget.task.id);
+    DatabaseHelper.instance.deleteTask(widget.task!.id);
     widget.UpdateTaskList();
     Navigator.pop(context);
   }
 
   _submit() {
-    if(_formKey.currentState.validate()) {
-      _formKey.currentState.save();
+    if(_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
       print('$_title, $_date, $_priority');
       //Insert new task
-      Task task = Task(title: _title, date: _date, priority: _priority);
-      if(widget.task == null){
-        task.status = 0;
-        DatabaseHelper.instance.insertTask(task);
-      }else{
-        task.id = widget.task.id;
-        task.status = widget.task.status;
-        DatabaseHelper.instance.updateTask(task);
-      }
-      widget.UpdateTaskList();
+      Task task = Task(id: widget.task!.id, title: _title, date: _date, priority: _priority, status: widget.task!.status);
+      DatabaseHelper.instance.updateTask(task);
+          widget.UpdateTaskList();
       Navigator.pop(context);
     }
   }
@@ -106,7 +123,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).backgroundColor,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
@@ -147,8 +164,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                               borderRadius: BorderRadius.circular(10.0),
                             ),
                           ),
-                          validator: (input) => input.trim().isEmpty ? 'Please Enter a task title' : null,
-                          onSaved: (input) => _title = input,
+                          validator: (input) => input!.trim().isEmpty ? 'Please Enter a task title' : null,
+                          onSaved: (input) => _title = input!,
                           initialValue: _title,
                         ),
                       ), //Title
@@ -194,7 +211,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                           validator: (input) => _priority == null ? 'Please select a priority level' : null,
                           onChanged: (value){
                             setState(() {
-                              _priority = value;
+                              _priority = value as String;
                             });
                           },
                           value: _priority,
@@ -208,14 +225,14 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                           color: Theme.of(context).primaryColor,
                           borderRadius: BorderRadius.circular(30.0),
                         ),
-                        child: FlatButton(
+                        child: TextButton(
                           child: Text(widget.task == null ? 'Add' : 'Update',
                             style: TextStyle(color: Colors.white, fontSize: 20.0,
                             ),
                           ),
                           onPressed: () {
-                            _iad.show();
                             _submit();
+                            _loadInterstitialAd();
                           },
                         ),
                       ),
@@ -227,7 +244,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                           color: Theme.of(context).primaryColor,
                           borderRadius: BorderRadius.circular(30.0),
                         ),
-                        child: FlatButton(
+                        child: TextButton(
                           child: Text('Delete',
                             style: TextStyle(color: Colors.white, fontSize: 20.0,
                             ),
@@ -237,7 +254,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                       ) : SizedBox.shrink(),
                     ],
                   ),
-                )
+                ),
               ],
             ),
           ),

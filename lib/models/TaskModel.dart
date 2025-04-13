@@ -7,26 +7,25 @@ class Task{
   int status; // 0 - Incomplete, 1 - Complete
 
   Task({
-    this.title,
-    this.date,
-    this.priority,
-    this.status,
+    required this.id,
+    required this.title,
+    required this.date,
+    required this.priority,
+    required this.status,
   });
 
   Task.withId({
-    this.id,
-    this.title,
-    this.date,
-    this.priority,
-    this.status
+    required this.id,
+    required this.title,
+    required this.date,
+    required this.priority,
+    required this.status
   });
 
   Map<String, dynamic> toMap(){
     final map = Map<String, dynamic>();
-    if(id != null){
-      map['id'] = id;
-    }
     map['id'] = id;
+      map['id'] = id;
     map['title'] = title;
     map['date'] = date.toIso8601String();
     map['priority'] = priority;

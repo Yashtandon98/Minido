@@ -4,8 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ThemeNotifier extends ChangeNotifier{
 
   final String key = "theme";
-  bool _isDarkMode;
-  SharedPreferences prefs;
+  late bool _isDarkMode;
+  late SharedPreferences prefs;
 
   bool get darktheme => _isDarkMode;
 
@@ -21,9 +21,7 @@ class ThemeNotifier extends ChangeNotifier{
   }
 
   _initPrefs() async{
-    if(prefs == null){
-      prefs = await SharedPreferences.getInstance();
-    }
+    
   }
 
   _loadFromprefs() async{

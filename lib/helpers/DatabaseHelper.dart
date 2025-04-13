@@ -5,7 +5,7 @@ import 'package:sqflite/sqflite.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._instance();
-  static Database _db;
+  static Database? _db;
 
   DatabaseHelper._instance();
 
@@ -17,10 +17,11 @@ class DatabaseHelper {
   String colStatus = 'status';
 
   Future<Database> get db async {
-    if (_db == null) {
-      _db = await _initDb();
+    if (_db != null) {
+      return _db!;
     }
-    return _db;
+    _db = await _initDb();
+    return _db!;
   }
 
   Future<Database> _initDb() async {
